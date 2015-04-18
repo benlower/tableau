@@ -43,12 +43,36 @@ function getTableData(lastRecordNumber) {
 
 function _retrieveXmlData(retrieveDataCallback) {
   if (!window.cachedTableData) {
-    var conData = JSON.parse(tableau.connectionData);
-    var xmlString = conData.xmlString;
-    if (conData.xmlUrl) {
+
+    var endDate = new Date(),
+        zipCode = $('input[type=text]'),
+        startDate = new Date();
+
+    zipCode = zipCode[0].value.trim();
+    if(!zipCode || zipCode.length < 5) {
+      return;
+    }
+
+
+    // set the start of the range to be 1 year ago
+    startDate.setYear(endDate.getFullYear() - 1);
+    if (lastRecordNumber) {
+      // used for larger data sets. Just return for now.
+      tableau.dataCallback([], lastRecordNumber);
+      return;
+    }
+    var connectionUrl = _buildUrl(zipCode, startDate, endDate);
+
+
+
+
+
+    //var conData = JSON.parse(tableau.connectionData);
+
+    if (connectionUrl) {
       // handle the xml data from the remote source.      
       var xhr = $.ajax({ 
-        url: conData.xmlUrl, 
+        url: connectionUrl, 
         dataType: 'xml', 
         success: function(data) 
         {
@@ -56,14 +80,6 @@ function _retrieveXmlData(retrieveDataCallback) {
           retrieveDataCallback(window.cachedTableData);
         }
       });
-      return;
-    }
-    try {
-      var xmlDoc = $.parseXML(conData.xmlString);
-      window.cachedTableData = _xmlToTable(xmlDoc);
-    }
-    catch (e) {
-      tableau.log("unable to parse xml data");
       return;
     }
   }
@@ -168,49 +184,42 @@ function _determineType(primitive) {
   return 'string';
 }
 
-function _submitXMLToTableau(xmlString, xmlUrl) {
-    var conData = {"xmlString" : xmlString, "xmlUrl": xmlUrl};
+function _submitXMLToTableau(xmlUrl) {
+    var conData = {"xmlUrl": xmlUrl};
     tableau.connectionData = JSON.stringify(conData);
     console.write(tableau.connectionData);
-    tableau.submit();  
+    tableau.submit();  // this will now call getColumnHeaders
+}
+
+// Takes a zip code, a start date and an end date, and constructs a URL for the Seattle Public Health Restaurant Inspection Data API
+// http://info.kingcounty.gov/health/ehs/foodsafety/inspections/XmlRest.aspx?Zip_Code=98103&Inspection_Start=4/18/2014&Inspection_End=04/18/2015
+function _buildUrl(zipCode, startDate, endDate){
+  var startDateStr = _getDateAsString(startDate),
+      endDateStr = _getDateAsString(endDate),
+      url = 'http://info.kingcounty.gov/health/ehs/foodsafety/inspections/XmlRest.aspx?Zip_Code=' + zipCode + '&Inspection_Start=' + startDateStr + '&Inspection_End=' + endDateStr;
+  return url;
+}
+// Gets a string representation of a date
+function _getDateAsString(date){
+  return date.getFullYear()  + '-' + _makeTwoDigits(date.getMonth() + 1) + '-' + _makeTwoDigits(date.getDate());
+}
+// Pads a given number with leading 0s so that there are two characters in the string. Example: _makeTwoDigits(1) --> "01"
+function _makeTwoDigits(num) {
+  return num < 9 ? "0" + num.toString() : num.toString();
 }
 
 $(document).ready(function(){
   $("#inputForm").submit(function(evt) { // This event fires when a button is clicked
     evt.preventDefault();
-    var xmlString = $('textarea[name=xmlText]')[0].value.trim();
     var xmlUrl = $('input[name=xmlUrl]')[0].value.trim();
-    _submitXMLToTableau(xmlString, xmlUrl);
+    _submitXMLToTableau(xmlUrl);
   });
 
   var cancel = function (e) {    
       e.stopPropagation();
       e.preventDefault();
   }
-  var ddHandler = $("#dragandrophandler");
-  ddHandler.on('dragenter', function (e) 
-  {
-      cancel(e);
-      $(this).css('border', '2px solid #0B85A1');
-  }).on('dragover', cancel)
-    .on('drop', function (e) 
-  {
-       $(this).css('border', '2px dashed #0B85A1');
-       e.preventDefault();
-       var files = e.originalEvent.dataTransfer.files;
-       var file = files[0];
-       var reader = new FileReader();
-       reader.onload = function(e) { _submitXMLToTableau(reader.result); };
-       reader.readAsText(file);
-  });
 
-  $(document).on('dragenter', cancel)
-             .on('drop', cancel)
-             .on('dragover', function (e) 
-  {
-    cancel(e);
-    ddHandler.css('border', '2px dashed #0B85A1');
-  });
 });
 
 </script>
@@ -230,6 +239,8 @@ $(document).ready(function(){
 <body>
 
 <form id="inputForm" action="">
+  Enter Zip Code: <input type="text" name="zipCode" style="width: 150px;" />
+  <br />
   Enter a URL for XML data: 
   <input type="text" name="xmlUrl" style="width: 400px;" />  
   <br>
