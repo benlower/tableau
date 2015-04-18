@@ -1,0 +1,100 @@
+<html>
+<meta http-equiv="Cache-Control" content="no-store" />
+<head>
+<!-- Comment the follwing line in and the line after out if you are not connected to the internet -->
+<!-- <script src="js/jquery-1.11.1.min.js" type="text/javascript"></script> -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+ 
+function init() 
+{
+    tableau.initCallback();
+}
+ 
+function shutdown() {
+    tableau.shutdownCallback();
+}
+ 
+function getColumnHeaders() {
+  var fieldNames = ['Ticker', 'Day', 'Close'];
+  var fieldTypes = ['string', 'date', 'float'];
+  tableau.headersCallback(fieldNames, fieldTypes); // tell tableau about the fields and their types
+}
+ 
+function getTableData(lastRecordNumber) {
+  var endDate = new Date(),
+      ticker = tableau.connectionData,
+      startDate = new Date();
+  // set the start of the range to be 1 year ago
+  startDate.setYear(endDate.getFullYear() - 1);
+  if (lastRecordNumber) {
+    // used for larger data sets. Just return for now.
+    tableau.dataCallback([], lastRecordNumber);
+    return;
+  }
+  var connectionUrl = _buildUrl(ticker, startDate, endDate);
+  var xhr = $.ajax({
+      url: connectionUrl,
+      dataType: 'json',
+      success: function (data) {
+          var quotes = data.query.results.quote;
+          var ii;
+          var toRet = [];
+          // mash the data into an array of objects
+          for (ii = 0; ii < quotes.length; ++ii) {
+              // Each entry can be a list of values in the same order as the columns
+              //var entry = [quotes[ii].Symbol, quotes[ii].Date, quotes[ii].Close];
+              // or an object where the column names are the keys of the map
+              var entry = {'Ticker': quotes[ii].Symbol, 
+                           'Day': quotes[ii].Date, 
+                           'Close': quotes[ii].Close};
+              toRet.push(entry);
+          }
+          // Call back to tableau with the table data
+          tableau.dataCallback(toRet, toRet.length);
+      }
+  });
+}
+
+// Takes a ticker symbol, a start date and an end date, and constructs a URL for the Yahoo! stock quote API
+function _buildUrl(tickerSymbol, startDate, endDate){
+  var startDateStr = _getDateAsString(startDate),
+      endDateStr = _getDateAsString(endDate),
+      data = 'select * from yahoo.finance.historicaldata where symbol = "' + tickerSymbol + '" and startDate = "' + startDateStr + '" and endDate = "' + endDateStr + '"',
+      url = 'http://query.yahooapis.com/v1/public/yql?q=' + encodeURIComponent(data) + "&env=http%3A%2F%2Fdatatables.org%2Falltables.env&format=json";
+  return url;
+}
+// Gets a string representation of a date that can be used with the Yahoo! API.
+function _getDateAsString(date){
+  return date.getFullYear()  + '-' + _makeTwoDigits(date.getMonth() + 1) + '-' + _makeTwoDigits(date.getDate());
+}
+// Pads a given number with leading 0s so that there are two characters in the string. Example: _makeTwoDigits(1) --> "01"
+function _makeTwoDigits(num) {
+  return num < 9 ? "0" + num.toString() : num.toString();
+}
+ 
+$(document).ready(function() {
+  $("#inputForm").submit(function() { // This event fires when a button is clicked
+    event.preventDefault();
+    var textField = $('input[type=text]'); // get the ticker symbol
+    if (!textField || textField.length == 0) {
+      return;
+    }
+    var textFieldData = textField[0].value.trim();
+    tableau.connectionData = textFieldData; // set the ticker symbol as the connection data so we can get to it when we fetch the data
+    tableau.connectionName = 'Stock quote ' + textFieldData; // name the data source. This will be the data source name in Tableau
+    tableau.submit();
+  });
+});
+ 
+</script>
+</head>
+<body>
+<form id="inputForm" action="">
+  Enter a ticker symbol: <input type="text" name="ticker" style="width: 150px;" />
+  <br>
+  <input type="submit" value="Get Stock Data">
+</form>
+ 
+</body>
+</html>
