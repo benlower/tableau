@@ -1,0 +1,121 @@
+<html>
+<meta http-equiv="Cache-Control" content="no-store" />
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+// ****************************************************************************************************
+// This connects to the Seattle Public Health Restaurant Inspection Data
+// Information about the API can be found at http://kingcounty.gov/healthservices/health/ehs/foodsafety/inspections/data.aspx
+//
+// Terms are defined at http://kingcounty.gov/healthservices/health/ehs/foodsafety/inspections/FoodTerms.aspx
+// ****************************************************************************************************
+ 
+function init() 
+{
+    tableau.initCallback();
+}
+ 
+function shutdown() {
+    tableau.shutdownCallback();
+}
+ 
+function getColumnHeaders() {
+  var fieldNames = ['Business_Name', 'Business_Address', 'Longitude', 'Latitude', 'Zip_Code', 'Inspection_Type', 'Inspection_Start_Date', 
+                    'Inspection_End_Date', 'Inspection_Closed_Business', 'Violation_Points', 'Violation_Red_Points', 'City', 'Sorting'];
+
+  // Using int for Zip_Code since we don't have to worry about any of those East Coast zips that start with zero
+  var fieldTypes = ['string', 'string', 'float', 'float', 'int', 'string', 'date', 'date', 'string', 'int', 'int', 'string', 'string'];
+
+  tableau.headersCallback(fieldNames, fieldTypes); // tell tableau about the fields and their types
+}
+ 
+function getTableData(lastRecordNumber) {
+  var endDate = new Date(),
+      zipCode = tableau.connectionData,
+      startDate = new Date();
+  // set the start of the range to be 1 year ago
+  startDate.setYear(endDate.getFullYear() - 1);
+  if (lastRecordNumber) {
+    // used for larger data sets. Just return for now.
+    tableau.dataCallback([], lastRecordNumber);
+    return;
+  }
+  var connectionUrl = _buildUrl(zipCode, startDate, endDate);
+  var xhr = $.ajax({
+      url: connectionUrl,
+      dataType: 'json',
+      success: function (data) {
+          var inspections = data.query.results.quote;
+          var ii;
+          var toRet = [];
+          // mash the data into an array of objects
+          for (ii = 0; ii < inspections.length; ++ii) {
+              // Each entry can be a list of values in the same order as the columns
+              //var entry = [quotes[ii].Symbol, quotes[ii].Date, quotes[ii].Close];
+              // or an object where the column names are the keys of the map
+              var entry = {
+                'Business_Name': inspections[ii].Business_Name,
+                'Business_Address': inspections[ii].Business_Address,
+                'Longitude': inspections[ii].Longitude,
+                'Latitude': inspections[ii].Latitude,
+                'Zip_Code': inspections[ii].Zip_Code,
+                'Inspection_Type': inspections[ii].Inspection_Type,
+                'Inspection_Start_Date': inspections[ii].Inspection_Start_Date, 
+                'Inspection_End_Date': inspections[ii].Inspection_End_Date,
+                'Inspection_Closed_Business': inspections[ii].Inspection_Closed_Business,
+                'Violation_Points': inspections[ii].Violation_Points,
+                'Violation_Red_Points': inspections[ii].Violation_Red_Points,
+                'City': inspections[ii].City,
+                'Sorting': inspections[ii].Sorting
+              };
+              toRet.push(entry);
+          }
+          // Call back to tableau with the table data
+          tableau.dataCallback(toRet, toRet.length);
+      }
+  });
+}
+
+// Takes a zip code, a start date and an end date, and constructs a URL for the Seattle Public Health Restaurant Inspection Data API
+// http://info.kingcounty.gov/health/ehs/foodsafety/inspections/XmlRest.aspx?Zip_Code=98103&Inspection_Start=4/18/2014&Inspection_End=04/18/2015
+function _buildUrl(zipCode, startDate, endDate){
+  var startDateStr = _getDateAsString(startDate),
+      endDateStr = _getDateAsString(endDate),
+      url = 'http://info.kingcounty.gov/health/ehs/foodsafety/inspections/XmlRest.aspx?Zip_Code=' + zipCode + '&Inspection_Start=' + startDateStr + '&Inspection_End=' + endDateStr;
+  return url;
+}
+// Gets a string representation of a date
+function _getDateAsString(date){
+  return date.getFullYear()  + '-' + _makeTwoDigits(date.getMonth() + 1) + '-' + _makeTwoDigits(date.getDate());
+}
+// Pads a given number with leading 0s so that there are two characters in the string. Example: _makeTwoDigits(1) --> "01"
+function _makeTwoDigits(num) {
+  return num < 9 ? "0" + num.toString() : num.toString();
+}
+ 
+$(document).ready(function() {
+  $("#inputForm").submit(function() { // This event fires when a button is clicked
+    event.preventDefault();
+    var textField = $('input[type=text]'); // get the zip code
+    if (!textField || textField.length == 0) {
+      return;
+    }
+    var textFieldData = textField[0].value.trim();
+    tableau.connectionData = textFieldData; // set the zip code as the connection data so we can get to it when we fetch the data
+    tableau.connectionName = 'Health Data ' + textFieldData; // name the data source. This will be the data source name in Tableau
+    tableau.submit();
+  });
+});
+ 
+</script>
+</head>
+<body>
+<form id="inputForm" action="">
+  Enter Zip Code: <input type="text" name="zipCode" style="width: 150px;" />
+  <br>
+  <input type="submit" value="Get Health Data">
+</form>
+ 
+</body>
+</html>
