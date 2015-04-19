@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta http-equiv="Cache-Control" content="no-store" />
+<head>
+<meta charset="utf-8"/>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+// https://api.forecast.io/forecast/a328cf110f5d0b477e730b71c2cde8de/37.8267,-122.423
+ 
+function init() 
+{
+    tableau.initCallback();
+}
+ 
+function shutdown() {
+    tableau.shutdownCallback();
+}
+ 
+function getColumnHeaders() {
+  var fieldNames = ['latitude', 'longitude', 'timezone', 'offset', 'currently', 'minutely', 'hourly', 'daily', 'alerts', 'flags'];
+  var fieldTypes = ['float', 'float', 'string', 'int', 'string', 'string', 'string', 'string', 'string', 'string'];
+  tableau.headersCallback(fieldNames, fieldTypes); // tell tableau about the fields and their types
+}
+ 
+function getTableData(lastRecordNumber) {
+  var url = tableau.connectionData;
+  console.log("url: " + tableau.connectionData);
+
+  var xhr = $.ajax({
+      url: url,
+      dataType: 'json',
+      success: function (data) {
+
+          // Call back to tableau with the table data
+          tableau.dataCallback(data);
+      }
+  });
+}
+
+// Constructs our URL for forecast.io API
+// https://api.forecast.io/forecast/a328cf110f5d0b477e730b71c2cde8de/37.8267,-122.423
+function _buildUrl(apiKey, latitude, longitude){
+  var url = 'https://api.forecast.io/forecast/' + apiKey + '/' + latitude + ',' + longitude;
+  console.log('We have our URL: ' + url);
+  return url;
+}
+ 
+$(document).ready(function() {
+  $("#inputForm").submit(function(event) { // This event fires when a button is clicked
+
+    event.preventDefault();
+
+    var apiKey = $('#APIKey').val();
+    var latitude = $('#latitude').val();
+    var longitude = $('#longitude').val();
+
+    apiKey = apiKey.trim();
+    latitude = latitude.trim();
+    longitude = longitude.trim();
+
+    if (!apiKey || !latitude || !longitude) {
+      return;
+    }
+
+    var connectionUrl = _buildUrl(apiKey, latitude, longitude);
+
+    tableau.connectionData = connectionUrl; // set the url as the connection data so we can get to it when we fetch the data
+    tableau.connectionName = 'Weather Forecast'; // name the data source. This will be the data source name in Tableau
+    tableau.submit();
+  });
+});
+ 
+</script>
+</head>
+<body>
+<form id="inputForm" action="">
+  Forecast.io API Key: <input type="text" id="APIKey" name="APIKey" style="width: 300px;" />
+  <br />
+  Latitude: <input type="text" id="latitude" name="latitude" style="width: 150px;" />
+  Longitude: <input type="text" id="longitude" name="longitude" style="width: 150px;" />
+  <input type="submit" value="Get Weather Forecast">
+</form>
+ 
+</body>
+</html>
+ 
