@@ -43,41 +43,15 @@ function getTableData(lastRecordNumber) {
   });
 }
 
+
 function _retrieveXmlData(retrieveDataCallback) {
-  console.log('entered _retrieveXmlData...');
   if (!window.cachedTableData) {
-    var endDate = new Date(),
-        zipCode = $('input[type=text]'),
-        startDate = new Date();
+    var conData = JSON.parse(tableau.connectionData);
 
-    zipCode = zipCode[0].value.trim();
-
-    if(!zipCode || zipCode.length < 5) {
-      return;
-    }
-
-    // set the start of the range to be 1 year ago
-    startDate.setYear(endDate.getFullYear() - 1);
-    
-    // if (lastRecordNumber) {
-
-    //   // used for larger data sets. Just return for now.
-    //   tableau.dataCallback([], lastRecordNumber);
-    //   return;
-    // }
-    var connectionUrl = _buildUrl(zipCode, startDate, endDate);
-
-
-console.log(connectionUrl);
-
-
-
-    //var conData = JSON.parse(tableau.connectionData);
-
-    if (connectionUrl) {
+    if (conData.xmlUrl) {
       // handle the xml data from the remote source.      
       var xhr = $.ajax({ 
-        url: connectionUrl, 
+        url: conData.xmlUrl, 
         dataType: 'xml', 
         success: function(data) 
         {
@@ -192,7 +166,6 @@ function _determineType(primitive) {
 function _submitXMLToTableau(xmlUrl) {
     var conData = {"xmlUrl": xmlUrl};
     tableau.connectionData = JSON.stringify(conData);
-    console.write(tableau.connectionData);
     tableau.submit();  // this will now call getColumnHeaders
 }
 
@@ -216,8 +189,22 @@ function _makeTwoDigits(num) {
 $(document).ready(function(){
   $("#inputForm").submit(function(evt) { // This event fires when a button is clicked
     evt.preventDefault();
-    var xmlUrl = $('input[name=xmlUrl]')[0].value.trim();
-    _submitXMLToTableau(xmlUrl);
+
+    var endDate = new Date(),
+        zipCode = $('input[name=zipCode]'),
+        startDate = new Date();
+
+    zipCode = zipCode[0].value.trim();
+
+    if(!zipCode || zipCode.length < 5) {
+      return;
+    }
+
+    // set the start of the range to be 1 year ago
+    startDate.setYear(endDate.getFullYear() - 1);
+    var connectionUrl = _buildUrl(zipCode, startDate, endDate);
+    console.log('url: ' + connectionUrl);
+    _submitXMLToTableau(connectionUrl);
   });
 
   var cancel = function (e) {    
@@ -228,34 +215,12 @@ $(document).ready(function(){
 });
 
 </script>
-
-<style>
-#dragandrophandler {
-  border:1px dashed #999;
-  width:300px;
-  color:#333;
-  text-align:left;vertical-align:middle;
-  padding:10px 10px 10 10px;
-  margin:10px;
-  font-size:150%;
-}
-</style>
 </head>
 <body>
 
 <form id="inputForm" action="">
   Enter Zip Code: <input type="text" name="zipCode" style="width: 150px;" />
-<!--   <br />
-  Enter a URL for XML data: 
-  <input type="text" name="xmlUrl" style="width: 400px;" />  
-  <br>
-  <div id="dragandrophandler">Or Drag & Drop Files Here</div>
-  <br>
-  Or paste XML data below
-  <br>
-  <textarea name="xmlText" rows="10" cols="70"/>
-  </textarea> -->
-  <input type="submit" value="Submit">
+  <input type="submit" value="Fetch Health Data">
 </form>
 
 </body>
