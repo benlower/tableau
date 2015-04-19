@@ -29,11 +29,16 @@ function getTableData(lastRecordNumber) {
 
   var xhr = $.ajax({
       url: url,
-      dataType: 'json',
+      crossDomain: true,
+      dataType: 'jsonp',
       success: function (data) {
+        console.log('we have data: ' + JSON.stringify(data));
 
           // Call back to tableau with the table data
-          tableau.dataCallback(data);
+          tableau.dataCallback(data, 1);
+      },
+      error: function(message) {
+        console.log('error: ' + message);
       }
   });
 }
@@ -41,7 +46,7 @@ function getTableData(lastRecordNumber) {
 // Constructs our URL for forecast.io API
 // https://api.forecast.io/forecast/a328cf110f5d0b477e730b71c2cde8de/37.8267,-122.423
 function _buildUrl(apiKey, latitude, longitude){
-  var url = 'https://api.forecast.io/forecast/' + apiKey + '/' + latitude + ',' + longitude;
+  var url = 'http://api.forecast.io/forecast/' + apiKey + '/' + latitude + ',' + longitude;
   console.log('We have our URL: ' + url);
   return url;
 }
