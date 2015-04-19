@@ -35,7 +35,7 @@ function getTableData(lastRecordNumber) {
         console.log('we have data: ' + JSON.stringify(data));
 
           // Call back to tableau with the table data
-          tableau.dataCallback(data, 1);
+          tableau.dataCallback(JSON.stringify(data), 1);
       },
       error: function(message) {
         console.log('error: ' + message);
