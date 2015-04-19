@@ -4,7 +4,7 @@
 <script type="text/javascript">
 
 function init() {
-  tableau.connectionName = 'XML data';
+  tableau.connectionName = 'Seattle Public Health Inspection Data';
   tableau.initCallback();
 }
 
@@ -13,6 +13,7 @@ function shutdown() {
 }
 
 function getColumnHeaders() {
+  console.log('entered getColumnHeaders...');
   _retrieveXmlData(function (tableData) {
     var headers = tableData.headers;
     var fieldNames = [];
@@ -29,6 +30,7 @@ function getColumnHeaders() {
 }
     
 function getTableData(lastRecordNumber) {
+  console.log('entered getTableData...');
   if (lastRecordNumber) {
     // used for larger data sets. Just return for now.
     tableau.dataCallback([], 0);
@@ -42,28 +44,31 @@ function getTableData(lastRecordNumber) {
 }
 
 function _retrieveXmlData(retrieveDataCallback) {
+  console.log('entered _retrieveXmlData...');
   if (!window.cachedTableData) {
-
     var endDate = new Date(),
         zipCode = $('input[type=text]'),
         startDate = new Date();
 
     zipCode = zipCode[0].value.trim();
+
     if(!zipCode || zipCode.length < 5) {
       return;
     }
 
-
     // set the start of the range to be 1 year ago
     startDate.setYear(endDate.getFullYear() - 1);
-    if (lastRecordNumber) {
-      // used for larger data sets. Just return for now.
-      tableau.dataCallback([], lastRecordNumber);
-      return;
-    }
+    
+    // if (lastRecordNumber) {
+
+    //   // used for larger data sets. Just return for now.
+    //   tableau.dataCallback([], lastRecordNumber);
+    //   return;
+    // }
     var connectionUrl = _buildUrl(zipCode, startDate, endDate);
 
 
+console.log(connectionUrl);
 
 
 
