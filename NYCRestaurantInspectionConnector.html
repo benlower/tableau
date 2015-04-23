@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta http-equiv="Cache-Control" content="no-store" />
+<head>
+<meta charset="utf-8"/>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+function init() {
+  tableau.connectionName = 'NYC Restaurant Inspection Data';
+  tableau.initCallback();
+}
+
+function shutdown() {
+    tableau.shutdownCallback();
+}
+
+function getColumnHeaders() {
+  _retrieveJsonData(function (tableData) {
+    var headers = tableData.headers;
+    var fieldNames = [];
+    var fieldTypes = [];
+
+    for (var fieldName in headers) {
+      if (headers.hasOwnProperty(fieldName)) {
+        fieldNames.push(fieldName);
+        fieldTypes.push(headers[fieldName]);
+      }
+    }
+    tableau.headersCallback(fieldNames, fieldTypes); // tell tableau about the fields and their types
+  });
+}
+    
+function getTableData(lastRecordNumber) {
+  if (lastRecordNumber) {
+    // used for larger data sets. Just return for now.
+    tableau.dataCallback([], lastRecordNumber);
+    return;
+  }
+
+  _retrieveJsonData(function (tableData) {
+    var rowData = tableData.rowData;
+    tableau.dataCallback(rowData, rowData.length);
+  });
+}
+
+function _retrieveJsonData(retrieveDataCallback) {
+  if (!window.cachedTableData) {
+    var conData = JSON.parse(tableau.connectionData);
+    var jsonString = conData.jsonString;
+    if (conData.jsonUrl) {
+      // handle the json data from the remote source.      
+      var xhr = $.ajax({ 
+        url: conData.jsonUrl, 
+        dataType: 'json', 
+        success: function(data) 
+        {
+          window.cachedTableData = _jsToTable(data);
+          retrieveDataCallback(window.cachedTableData);
+        }
+      });
+      return;
+    }
+    try {
+      window.cachedTableData = _jsToTable(JSON.parse(conData.jsonString));
+    }
+    catch (e) {
+      tableau.log("unable to parse json data");
+      return;
+    }
+  }
+  retrieveDataCallback(window.cachedTableData);
+}
+
+function _runJsonToTableTests() {
+  // _findLongestsArray tests
+
+  // _flattenObject tests
+
+  // _extract headers test
+}
+
+function _jsToTable(objectBlob) {
+  var rowData = _flattenData(objectBlob);
+  var headers = _extractHeaders(rowData);
+  return {"headers":headers, "rowData":rowData};
+}
+
+function _flattenData(objectBlob) {
+  // first find the longest array
+  var longestArray = _findLongestArray(objectBlob, []);
+  if (!longestArray) {
+    // if no array found, just wrap the entire object blob in an array
+    longestArray = [objectBlob];
+  }
+  for (var ii = 0; ii < longestArray.length; ++ii) {
+    _flattenObject(longestArray[ii]);
+  }
+  return longestArray;
+}
+
+function _flattenObject(obj) {
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key) && typeof obj[key] == 'object') {
+      var subObj = obj[key];
+      _flattenObject(subObj);
+      for (var k in subObj) {
+        if (subObj.hasOwnProperty(k)) {
+          obj[key + '_' + k] = subObj[k];
+        }
+      }
+      delete obj[key];
+    }
+  }
+}
+
+function _findLongestArray(obj, bestSoFar) {
+  if (!obj) {
+    // skip null/undefined objects
+    return bestSoFar;
+  }
+
+  // if an array, just return the longer one
+  if (obj.constructor === Array) {
+    // I think I can simplify this line to
+    // return obj;
+    // and trust that the caller will deal with taking the longer array
+    return (obj.length > bestSoFar.length) ? obj : bestSoFar;
+  }
+  if (typeof obj != "object") {
+    return bestSoFar;
+  }
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      var subBest = _findLongestArray(obj[key], bestSoFar);
+      if (subBest.length > bestSoFar.length) {
+        bestSoFar = subBest;
+      }
+    }
+  }
+  return bestSoFar;
+}
+
+function _extractHeaders(rowData) {
+  var toRet = {};
+  for (var row = 0; row < rowData.length; ++row) {
+    var rowLine = rowData[row];
+    for (var key in rowLine) {
+      if (rowLine.hasOwnProperty(key)) {
+        if (!(key in toRet)) {
+          toRet[key] = _determineType(rowLine[key]);
+        }
+      }
+    }
+  }
+  return toRet;
+}
+
+function _determineType(primitive) {
+  // possible types: 'float', 'date', 'datetime', 'bool', 'string', 'int'
+  if (parseInt(primitive) == primitive) return 'int';
+  if (parseFloat(primitive) == primitive) return 'float';
+  if (isFinite(new Date(primitive).getTime())) return 'datetime';
+  return 'string';
+}
+
+function _submitToJsonToTableau(jsonString, jsonUrl) {
+    var conData = {"jsonString" : jsonString, "jsonUrl": jsonUrl};
+    tableau.connectionData = JSON.stringify(conData);
+    tableau.submit();  
+}
+
+$(document).ready(function(){
+  $("#inputForm").submit(function(event) { // This event fires when a button is clicked
+    event.preventDefault();
+
+    // Get our zipcode that was provided
+    var zipcode	 = $('#zipcode').val();
+    zipcode = zipcode.trim();
+
+    // Make sure we have values before we proceed
+    if (!zipcode || zipcode.length != 5) {
+      return;
+    }
+
+    // Construct our URL for the API call
+    var jsonString = '';
+    var jsonUrl = 'http://data.cityofnewyork.us/resource/xx67-kt59.json?zipcode=' + zipcode;
+    console.log(jsonUrl);
+    _submitToJsonToTableau(jsonString, jsonUrl);
+  });
+
+  var cancel = function (e) {    
+      e.stopPropagation();
+      e.preventDefault();
+  }
+});
+
+</script>
+</head>
+  <body>
+    <form id="inputForm" action="">
+      Zipcode: <input type="text" id="zipcode" name="zipcode" style="width: 150px;" />
+      <br />
+      <br />
+      <input type="submit" value="Get Results">
+    </form>
+  </body>
+</html>
