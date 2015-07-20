@@ -37,13 +37,20 @@ c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe creategroup "Billing"
 c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe creategroup "Facilities"
 
 
-REM -- Create our site users
-c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers "c:\temp\HRusers.csv" --role "Publisher"
-c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers "c:\temp\ITusers.csv" --role "Publisher"
-c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers "c:\temp\Salesusers.csv" --role "Interactor"
-c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers "c:\temp\Operationsusers.csv" --role "Interactor"
-c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers "c:\temp\Billingusers.csv" --role "Interactor"
-c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers "c:\temp\Facilitiesusers.csv" --role "Interactor"
+REM -- Create our site users (users for each department then managers for each department)
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Interactor" "c:\temp\HRUsers.csv"
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Interactor" "c:\temp\ITUsers.csv"
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Interactor" "c:\temp\SalesUsers.csv"
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Interactor" "c:\temp\OpsUsers.csv"
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Interactor" "c:\temp\BillingUsers.csv"
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Interactor" "c:\temp\FacilitiesUsers.csv"
+
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Publisher" "c:\temp\HRManagers.csv"
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Publisher" "c:\temp\ITManagers.csv"
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Publisher" "c:\temp\SalesManagers.csv"
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Publisher" "c:\temp\OpsManagers.csv"
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Publisher" "c:\temp\BillingManagers.csv"
+c:\PROGRA~2\Tableau\TABLEA~1\9.0\bin\tabcmd.exe createsiteusers --role "Publisher" "c:\temp\FacilitiesManagers.csv"
 
 REM -- Create a user for each department called "<dept> Manager" and give manager rights for the project content
 REM -- This requires a CSV file
