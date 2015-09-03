@@ -6,7 +6,6 @@
 <script type="text/javascript" src="js/jquery-2.1.4.js"></script>
 <script type="text/javascript" src="js/tableauwc-1.1.0.js"></script>
 <script type="text/javascript">
-
 function init() {
   tableau.connectionName = 'Forecast.io Weather Data';
   tableau.initCallback();
@@ -204,13 +203,11 @@ $(document).ready(function(){
 </script>
 </head>
   <body>
-    <form id="inputForm" action="">
       Latitude:&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" id="latitude" name="latitude" style="width: 150px;" /> (try 47.6716 for 98103)
       <br />
       Longitude: <input type="text" id="longitude" name="longitude" style="width: 150px;" /> (try -122.3411 for 98103)
       <br />
       <br />
-      <input type="submit" value="Get Weather Forecast">
-    </form>
+      <button type="button" id="submitbutton">Get Weather Forecast</button>
   </body>
 </html>
