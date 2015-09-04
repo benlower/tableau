@@ -6,200 +6,97 @@
 <script type="text/javascript" src="js/jquery-2.1.4.js"></script>
 <script type="text/javascript" src="js/tableauwc-1.1.0.js"></script>
 <script type="text/javascript">
-function init() {
-  tableau.connectionName = 'Forecast.io Weather Data';
-  tableau.initCallback();
-}
-
-function shutdown() {
-    tableau.shutdownCallback();
-}
-
-function getColumnHeaders() {
-  _retrieveJsonData(function (tableData) {
-    var headers = tableData.headers;
-    var fieldNames = [];
-    var fieldTypes = [];
-
-    for (var fieldName in headers) {
-      if (headers.hasOwnProperty(fieldName)) {
-        fieldNames.push(fieldName);
-        fieldTypes.push(headers[fieldName]);
-      }
-    }
-    tableau.headersCallback(fieldNames, fieldTypes); // tell tableau about the fields and their types
-  });
-}
+  // Use anon self-executing function
+  (function() {
+    // Define our connector
+    var myConnector = tableau.makeConnector();
     
-function getTableData(lastRecordNumber) {
-  if (lastRecordNumber) {
-    // used for larger data sets. Just return for now.
-    tableau.dataCallback([], lastRecordNumber);
-    return;
-  }
-
-  _retrieveJsonData(function (tableData) {
-    var rowData = tableData.rowData;
-    tableau.dataCallback(rowData, rowData.length);
-  });
-}
-
-function _retrieveJsonData(retrieveDataCallback) {
-  if (!window.cachedTableData) {
-    var conData = JSON.parse(tableau.connectionData);
-    var jsonString = conData.jsonString;
-    if (conData.jsonUrl) {
-      // handle the json data from the remote source.      
-      var xhr = $.ajax({ 
-        url: conData.jsonUrl, 
-        dataType: 'jsonp', 
-        success: function(data) 
-        {
-          window.cachedTableData = _jsToTable(data);
-          retrieveDataCallback(window.cachedTableData);
-        }
-      });
-      return;
+    // Set-up column headers so Tableau knows about our fields and their datatypes (26 fields)
+    myConnector.getColumnHeaders = function() {
+      var fieldNames = ['time', 'summary', 'sunriseTime', 'sunsetTime', 'moonPhase', 'precipIntensity', 'precipIntensityMax', 'precipIntensityMaxTime', 'precipProbability', 'precipType', 'temperatureMin', 'temperatureMinTime', 'temperatureMax', 'temperatureMaxTime', 'apparentTemperatureMin', 'apparentTemperatureMinTime', 'apparentTemperatureMax', 'apparentTemperatureMaxTime', 'dewPoint', 'humidity', 'windSpeed', 'windBearing', 'visibility', 'cloudCover', 'pressure', 'ozone'];
+      var fieldTypes = ['int', 'string', 'int', 'int', 'float', 'float', 'float', 'int', 'float', 'string', 'float', 'int', 'float', 'int', 'float', 'int', 'float', 'int', 'float', 'float', 'float', 'int', 'float', 'float', 'float', 'int'];
+      
+      tableau.headersCallback(fieldNames, fieldTypes);
+    };
+    
+    /*
+    
+    bool
+    date
+    datetime
+    float
+    int
+    string
+*/
+    
+    /*
+    
+    "time": 1441350000,
+				"summary": "Partly cloudy until evening.",
+				"icon": "partly-cloudy-day",
+				"sunriseTime": 1441373590,
+				"sunsetTime": 1441421203,
+				"moonPhase": 0.72,
+				"precipIntensity": 0.0003,
+				"precipIntensityMax": 0.0023,
+				"precipIntensityMaxTime": 1441350000,
+				"precipProbability": 0.01,
+				"precipType": "rain",
+				"temperatureMin": 48.85,
+				"temperatureMinTime": 1441371600,
+				"temperatureMax": 67.4,
+				"temperatureMaxTime": 1441407600,
+				"apparentTemperatureMin": 48.85,
+				"apparentTemperatureMinTime": 1441371600,
+				"apparentTemperatureMax": 67.4,
+				"apparentTemperatureMaxTime": 1441407600,
+				"dewPoint": 47.07,
+				"humidity": 0.71,
+				"windSpeed": 5.26,
+				"windBearing": 355,
+				"visibility": 8.95,
+				"cloudCover": 0.38,
+				"pressure": 1015.77,
+				"ozone": 351
+        */
+    
+    // Money function to get data
+    
+    // Set-up our URL
+    myConnector.setLocation = function(latitude, longitude) {
+      // Hard-code our Forecast.io API Key
+      var apiKey = 'a328cf110f5d0b477e730b71c2cde8de';
+      
+      // Construct our URL for the API call
+      var url = 'http://api.forecast.io/forecast/' + apiKey + '/' + latitude + ',' + longitude;
+      
+      tableau.connectionData = url;
+      tableau.connectionName = 'Forecast.io Weather Data for ' + latitude + ' ' + longitude;
     }
-    try {
-      window.cachedTableData = _jsToTable(JSON.parse(conData.jsonString));
-    }
-    catch (e) {
-      tableau.log("unable to parse json data");
-      return;
-    }
-  }
-  retrieveDataCallback(window.cachedTableData);
-}
-
-function _runJsonToTableTests() {
-  // _findLongestsArray tests
-
-  // _flattenObject tests
-
-  // _extract headers test
-}
-
-function _jsToTable(objectBlob) {
-  var rowData = _flattenData(objectBlob);
-  var headers = _extractHeaders(rowData);
-  return {"headers":headers, "rowData":rowData};
-}
-
-function _flattenData(objectBlob) {
-  // first find the longest array
-  var longestArray = _findLongestArray(objectBlob, []);
-  if (!longestArray) {
-    // if no array found, just wrap the entire object blob in an array
-    longestArray = [objectBlob];
-  }
-  for (var ii = 0; ii < longestArray.length; ++ii) {
-    _flattenObject(longestArray[ii]);
-  }
-  return longestArray;
-}
-
-function _flattenObject(obj) {
-  for (var key in obj) {
-    if (obj.hasOwnProperty(key) && typeof obj[key] == 'object') {
-      var subObj = obj[key];
-      _flattenObject(subObj);
-      for (var k in subObj) {
-        if (subObj.hasOwnProperty(k)) {
-          obj[key + '_' + k] = subObj[k];
-        }
+    
+    // Register the connector
+    
+    // UI -> use jQuery for button click handler
+    $(document).ready(function(){
+      $("#submitButton").click(function(event) {
+      
+      // Get our lat/long values that were provided
+      var latitude = $('#latitude').val();
+      var longitude = $('#longitude').val();
+      latitude = latitude.trim();
+      longitude = longitude.trim();
+      
+      // Make sure we have values before we proceed
+      if (!latitude || !longitude) {
+        return;
+      } else {
+        myConnector.setLocation(latitude, longitude);
+        tableau.submit();
       }
-      delete obj[key];
-    }
-  }
-}
-
-function _findLongestArray(obj, bestSoFar) {
-  if (!obj) {
-    // skip null/undefined objects
-    return bestSoFar;
-  }
-
-  // if an array, just return the longer one
-  if (obj.constructor === Array) {
-    // I think I can simplify this line to
-    // return obj;
-    // and trust that the caller will deal with taking the longer array
-    return (obj.length > bestSoFar.length) ? obj : bestSoFar;
-  }
-  if (typeof obj != "object") {
-    return bestSoFar;
-  }
-  for (var key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      var subBest = _findLongestArray(obj[key], bestSoFar);
-      if (subBest.length > bestSoFar.length) {
-        bestSoFar = subBest;
-      }
-    }
-  }
-  return bestSoFar;
-}
-
-function _extractHeaders(rowData) {
-  var toRet = {};
-  for (var row = 0; row < rowData.length; ++row) {
-    var rowLine = rowData[row];
-    for (var key in rowLine) {
-      if (rowLine.hasOwnProperty(key)) {
-        if (!(key in toRet)) {
-          toRet[key] = _determineType(rowLine[key]);
-        }
-      }
-    }
-  }
-  return toRet;
-}
-
-function _determineType(primitive) {
-  // possible types: 'float', 'date', 'datetime', 'bool', 'string', 'int'
-  if (parseInt(primitive) == primitive) return 'int';
-  if (parseFloat(primitive) == primitive) return 'float';
-  if (isFinite(new Date(primitive).getTime())) return 'datetime';
-  return 'string';
-}
-
-function _submitToJsonToTableau(jsonString, jsonUrl) {
-    var conData = {"jsonString" : jsonString, "jsonUrl": jsonUrl};
-    tableau.connectionData = JSON.stringify(conData);
-    tableau.submit();  
-}
-
-$(document).ready(function(){
-  $("#inputForm").submit(function(event) { // This event fires when a button is clicked
-    event.preventDefault();
-
-    // Hard-code our Forecast.io API Key
-    var apiKey = 'a328cf110f5d0b477e730b71c2cde8de';
-
-    // Get our lat/long values that were provided
-    var latitude = $('#latitude').val();
-    var longitude = $('#longitude').val();
-    latitude = latitude.trim();
-    longitude = longitude.trim();
-
-    // Make sure we have values before we proceed
-    if (!apiKey || !latitude || !longitude) {
-      return;
-    }
-
-    // Construct our URL for the API call
-    var jsonString = '';
-    var jsonUrl = 'http://api.forecast.io/forecast/' + apiKey + '/' + latitude + ',' + longitude;
-    _submitToJsonToTableau(jsonString, jsonUrl);
-  });
-
-  var cancel = function (e) {    
-      e.stopPropagation();
-      e.preventDefault();
-  }
-});
-
+    });         
+    
+  })();
+  
 </script>
 </head>
   <body>
