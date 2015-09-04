@@ -32,7 +32,7 @@
     // ------------------------------------------------------------
     myConnector.getColumnHeaders = function() {
       var fieldNames = ['time', 'summary', 'sunriseTime', 'sunsetTime', 'moonPhase', 'precipIntensity', 'precipIntensityMax', 'precipIntensityMaxTime', 'precipProbability', 'precipType', 'temperatureMin', 'temperatureMinTime', 'temperatureMax', 'temperatureMaxTime', 'apparentTemperatureMin', 'apparentTemperatureMinTime', 'apparentTemperatureMax', 'apparentTemperatureMaxTime', 'dewPoint', 'humidity', 'windSpeed', 'windBearing', 'visibility', 'cloudCover', 'pressure', 'ozone'];
-      var fieldTypes = ['int', 'string', 'int', 'int', 'float', 'float', 'float', 'int', 'float', 'string', 'float', 'int', 'float', 'int', 'float', 'int', 'float', 'int', 'float', 'float', 'float', 'int', 'float', 'float', 'float', 'int'];
+      var fieldTypes = ['datetime', 'string', 'datetime', 'datetime', 'float', 'float', 'float', 'int', 'float', 'string', 'float', 'datetime', 'float', 'datetime', 'float', 'datetime', 'float', 'datetime', 'float', 'float', 'float', 'int', 'float', 'float', 'float', 'int'];
       
       tableau.headersCallback(fieldNames, fieldTypes);
     };
